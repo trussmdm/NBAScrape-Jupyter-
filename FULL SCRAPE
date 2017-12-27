@@ -1,0 +1,82 @@
+import bs4 as bs
+import pandas as pd
+import urllib.request
+import re
+import requests
+import csv
+from string import ascii_lowercase
+
+
+statHeaders = ['Player', 'Age', 'Tm', 'Lg', 'Pos', 'G', 'GS', 'MP', 'FG', 'FGA', 'FG%', '3P', '3PA', '3P%', '2P', '2PA', '2P%', 'eFG%', 'FT', 'FTA', 'FT%', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS']    
+blanklist = ['' for x in range (30)]
+allDF = pd.DataFrame({'': blanklist})
+allDF = allDF.set_index([statHeaders])
+allDF = pd.DataFrame.transpose(allDF)
+
+for letter in ascii_lowercase:
+    if letter != 'x':
+
+        playersUrl = 'https://www.basketball-reference.com/players/'+letter+'/'
+        playersPage = urllib.request.urlopen(playersUrl)
+        playersSoup = bs.BeautifulSoup(playersPage)
+        playersText = playersPage.read()
+        playersTable = playersSoup.find('table', class_="sortable stats_table")
+
+        urlBuilder = re.compile(r'(?<=<a href=")/players/\w+/\w{9}.html')
+        allUrls = re.findall(urlBuilder, str(playersTable))
+
+        allUrlsList = []
+
+
+        for x in allUrls:
+            allUrlsList.append('https://www.basketball-reference.com' + x)
+
+
+        for x in allUrlsList:
+            try:
+                url = str(x)
+                page = requests.get(url)
+                pageText = page.text
+                soup = bs.BeautifulSoup(pageText, "html.parser")
+                table = soup.find('table', class_="row_summable sortable stats_table")
+                nameTag = soup.h1.get_text()
+
+
+                yearKeys = []
+
+                for row in table.findAll('tr')[1:]:
+                    for cells in row.findAll('th'):
+                        yearKeys.append(cells.get_text())
+
+
+                statData = []
+
+                for rowData in table.findAll('td')[0::1]:
+                    statData.append(rowData.get_text())
+
+                i = 0
+
+                while i < len(statData):
+                    statData.insert(i, nameTag)
+                    i += 30
+
+
+                statDataList = [statData[x:x+30] for x in range(0, len(statData), 30)]
+
+                statDict = dict(zip(yearKeys, statDataList))
+
+                playerTable = pd.DataFrame(statDict)
+
+                playerTable = playerTable.set_index([statHeaders])
+
+                ptt = pd.DataFrame.transpose(playerTable)
+
+                print(nameTag)
+                ptt.to_csv('%s.csv' %(nameTag))
+
+                allDF = allDF.append(ptt)
+
+
+            except Exception:
+                pass
+allDF.to_csv('ALL.csv')
