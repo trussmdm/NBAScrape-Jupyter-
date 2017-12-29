@@ -1,0 +1,87 @@
+import bs4 as bs
+import pandas as pd
+import urllib.request
+import re
+import requests
+import csv
+from string import ascii_lowercase
+
+
+
+nameTagList = []
+birthMonthList = []
+birthDayList = []
+birthCountryList = []
+birthStateList = []
+pHeightList = []
+pWeightList = []
+pDomHandList = []
+
+bioDict = {'player': nameTagList, 'birthMonth': birthMonthList, 'birthDay': birthDayList, 
+           'birthCountry': birthCountryList, 'birthState': birthStateList, 'height': pHeightList, 
+           'weight': pWeightList}
+
+for letter in ['z']:
+    if letter != 'x':
+
+        playersUrl = 'https://www.basketball-reference.com/players/'+letter+'/'
+        playersPage = urllib.request.urlopen(playersUrl)
+        playersSoup = bs.BeautifulSoup(playersPage)
+        playersText = playersPage.read()
+
+        urlBuilder = re.compile(r'(?<=<a href=")/players/\w+/\w{9}.html')
+        allUrls = re.findall(urlBuilder, str(playersTable))
+
+        allUrlsList = []
+
+
+        for x in allUrls:
+            allUrlsList.append('https://www.basketball-reference.com' + x)
+
+
+        for x in allUrlsList:
+            try:
+                url = str(x)
+                page = requests.get(url)
+                pageText = page.text
+                soup = bs.BeautifulSoup(pageText, "html.parser")
+
+                nameTag = soup.h1.get_text()
+                nameTagList.append(nameTag)
+
+                regexBmonth = re.compile(r'(?<=birthdays.fcgi\?month=)\d{1,2}')
+                birthMonth = re.findall(regexBmonth, str(pageText))[0]
+                birthMonthList.append(birthMonth)
+
+                regexBday = re.compile(r'(?<=day=)\d{1,2}')
+                birthDay = re.findall(regexBday, str(pageText))[0]
+                birthDayList.append(birthDay)
+
+                regexCountry = re.compile(r'(?<=birthplaces.cgi\?country=)\w{2}')
+                birthCountry = re.findall(regexCountry, str(pageText))[0]
+                birthCountryList.append(birthCountry)
+
+                regexState = re.compile(r'(?<=state=).{2}')
+                birthState = re.findall(regexState, str(pageText))[0]
+                if str(birthState).isalnum() == False:
+                    birthState = ''
+                else: 
+                    birthState = re.findall(regexState, str(pageText))[0]
+                birthStateList.append(birthState)
+
+                regexHeight = re.compile(r'(?<=<span itemprop="height">)\d+-\d+')
+                pHeight = re.findall(regexHeight, str(pageText))[0]
+                pHeightList.append(pHeight)
+
+                regexWeight = re.compile(r'(?<=<span itemprop="weight">)\d{3}')
+                pWeight = re.findall(regexWeight, str(pageText))[0]
+                pWeightList.append(pWeight)
+
+                """if soup.find_all('strong')[4].next_sibling == '':
+                    pDomHand = soup.find_all('strong')[5].next_sibling
+                else:
+                    pDomHand = soup.find_all('strong')[4].next_sibling
+                pDomHandList.append(pDomHand)"""
+            except:
+                pass
+print(bioDict)
