@@ -21,13 +21,14 @@ bioDict = {'player': nameTagList, 'birthMonth': birthMonthList, 'birthDay': birt
            'birthCountry': birthCountryList, 'birthState': birthStateList, 'height': pHeightList, 
            'weight': pWeightList}
 
-for letter in ['z']:
+for letter in ascii_lowercase:
     if letter != 'x':
 
         playersUrl = 'https://www.basketball-reference.com/players/'+letter+'/'
         playersPage = urllib.request.urlopen(playersUrl)
         playersSoup = bs.BeautifulSoup(playersPage)
         playersText = playersPage.read()
+        playersTable = playersSoup.find('table', class_="sortable stats_table")
 
         urlBuilder = re.compile(r'(?<=<a href=")/players/\w+/\w{9}.html')
         allUrls = re.findall(urlBuilder, str(playersTable))
@@ -84,4 +85,6 @@ for letter in ['z']:
                 pDomHandList.append(pDomHand)"""
             except:
                 pass
-print(bioDict)
+bioDF = pd.DataFrame.from_dict(bioDict, orient='index')
+bioDF = pd.DataFrame.transpose(bioDF)
+bioDF.to_csv('bioData.csv')
