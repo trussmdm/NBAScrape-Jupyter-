@@ -77,6 +77,8 @@ for letter in ascii_lowercase:
                 regexWeight = re.compile(r'(?<=<span itemprop="weight">)\d{3}')
                 pWeight = re.findall(regexWeight, str(pageText))[0]
                 pWeightList.append(pWeight)
+                
+                print(nameTag)
 
                 """if soup.find_all('strong')[4].next_sibling == '':
                     pDomHand = soup.find_all('strong')[5].next_sibling
@@ -85,6 +87,10 @@ for letter in ascii_lowercase:
                 pDomHandList.append(pDomHand)"""
             except:
                 pass
+
+nameDF = pd.DataFrame(nameTagList)
+nameDF.to_csv('nameList.csv')
+
 bioDF = pd.DataFrame.from_dict(bioDict, orient='index')
 bioDF = pd.DataFrame.transpose(bioDF)
 bioDF.to_csv('bioData.csv')
